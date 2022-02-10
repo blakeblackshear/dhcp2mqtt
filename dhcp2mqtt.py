@@ -46,7 +46,7 @@ client.loop_start()
 
 def handle_dhcp_packet(packet):
     # just look at discovery packets
-    if DHCP in packet and packet[DHCP].options[0][1] == 1:
+    if DHCP in packet and (packet[DHCP].options[0][1] == 1 or packet[DHCP].options[0][1] == 3):
         # see if the requestor is in the list to monitor
         if packet[Ether].src.lower() in macs:
             print(f"DHCP Discovery from {packet[Ether].src}")
