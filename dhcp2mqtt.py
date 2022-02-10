@@ -18,6 +18,7 @@ if MACS_TO_MONITOR is None:
     sys.exit("No MACS_TO_MONITOR environment variable set")
 
 macs = MACS_TO_MONITOR.lower().split(',')
+debounce_log = {}
 
 print(f"Monitoring discover packets from: {macs}")
 
@@ -46,11 +47,13 @@ client.loop_start()
 
 def handle_dhcp_packet(packet):
     # just look at discovery packets
-    if DHCP in packet and packet[DHCP].options[0][1] == 1:
+    if DHCP in packet and packet[DHCP].options[0][1] in [1,3]:
         # see if the requestor is in the list to monitor
         if packet[Ether].src.lower() in macs:
-            print(f"DHCP Discovery from {packet[Ether].src}")
-            client.publish(f"{MQTT_TOPIC_PREFIX}/{packet[Ether].src}", 'discover', retain=False)
+            if packet[Ether].src not in debounce_log or debounce_log[packet[Ether].src] < time.time() - 2:
+                debounce_log[packet[Ether].src] = time.time()
+                print(f"DHCP Discovery from {packet[Ether].src}")
+                client.publish(f"{MQTT_TOPIC_PREFIX}/{packet[Ether].src}", 'discover', retain=False)
 
     return
 
